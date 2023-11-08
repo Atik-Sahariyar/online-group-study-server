@@ -45,7 +45,7 @@ const verifyToken = async (req, res, next) => {
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: 'unauthorized access' })
+      return res.status(403).send({ message: 'unauthorized access' })
     }
     req.user = decoded;
     next();
@@ -112,7 +112,7 @@ async function run() {
 
 
     // get assignment details api
-    app.get('/assignments/:id', async (req, res) => {
+    app.get('/assignments/:id', logger, verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
@@ -126,7 +126,7 @@ async function run() {
 
 
     // get pending assignments
-    app.get('/submittedAssignments', async (req, res) => {
+    app.get('/submittedAssignments', logger, verifyToken, async (req, res) => {
       try {
         const status = 'pending';
         const pendingAssignments = await submittedAssignmentCollection.find({ status }).toArray();
@@ -139,7 +139,7 @@ async function run() {
 
 
     // get my assignments
-    app.get('/submittedAssignments/myAssignment/:email', async (req, res) => {
+    app.get('/submittedAssignments/myAssignment/:email', logger, verifyToken, async (req, res) => {
       try {
         const examineeEmail = req.params.email;
         const myAssignments = await submittedAssignmentCollection.find({ examineeEmail }).toArray();
@@ -175,8 +175,8 @@ async function run() {
     });
 
 
-    // create assignment to post database
-    app.post('/assignments', async (req, res) => {
+    // create assignment to post database api
+    app.post('/assignments', logger, verifyToken,  async (req, res) => {
       try {
         const newAssignment = req.body;
         const existingAssignment = await assignmentsCollection.findOne({ assignmentTitle: newAssignment.assignmentTitle });
@@ -197,8 +197,8 @@ async function run() {
     });
 
 
-    // submited assignment to post database
-    app.post('/assignmentSubmission', async (req, res) => {
+    // submited assignment to post database api
+    app.post('/assignmentSubmission',logger, verifyToken, async (req, res) => {
       console.log('route run');
       try {
 
@@ -219,7 +219,7 @@ async function run() {
 
 
     // delete assignment
-    app.delete('/assignments/:id', async (req, res) => {
+    app.delete('/assignments/:id',logger, verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
@@ -233,7 +233,7 @@ async function run() {
 
 
     // update assignment 
-    app.patch('/assignments/:id', async (req, res) => {
+    app.patch('/assignments/:id',logger, verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
 
@@ -269,7 +269,7 @@ async function run() {
 
 
     // update submitted assignment after getting marks
-    app.patch('/assignmentSubmission/:id', async (req, res) => {
+    app.patch('/assignmentSubmission/:id',logger, verifyToken, async (req, res) => {
       try {
         const id = req.params.id;
         const isValidObjectId = ObjectId.isValid(id);
