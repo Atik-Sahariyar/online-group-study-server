@@ -11,9 +11,11 @@ const port = process.env.PORT || 5000;
 // middilware
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175' 
+    // 'http://localhost:5173',
+    // 'http://localhost:5174',
+    // 'http://localhost:5175',
+    'https://online-group-study-401cd.web.app',
+    'https://online-group-study-401cd.firebaseapp.com'
   ],
   credentials: true
 }));
@@ -39,7 +41,7 @@ const logger = async (req, res, next) => {
 }
 
 const verifyToken = async (req, res, next) => {
-  const token = req.cookies?.token;
+  const token = await req.cookies?.token;
   if (!token) {
     return res.status(401).send({ message: 'unauthorized access' })
   }
@@ -56,7 +58,7 @@ const verifyToken = async (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const databaseName = client.db('onlineGroupStudy');
     const usersCollection = databaseName.collection('users');
@@ -66,15 +68,18 @@ async function run() {
     // auth related api
     app.post('/jwt', logger, async (req, res) => {
       try {
-        const user = req.body;
-        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        const user = await req.body;
+        const token =  jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
           expiresIn: '1h'
         });
 
         res
           .cookie('token', token, {
+            // httpOnly: true,
+            // secure: true,
             httpOnly: true,
-            secure: false,
+                secure: process.env.NODE_ENV === 'production'  ? true : false, 
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
           })
           .send({ success: true })
       } catch (error) {
@@ -88,7 +93,7 @@ async function run() {
     // get assignments api
     app.get('/assignments', async (req, res) => {
       try {
-        const cursor = assignmentsCollection.find();
+        const cursor =  assignmentsCollection.find();
         const result = await cursor.toArray();
         res.status(200).json(result);
       } catch (error) {
@@ -154,7 +159,7 @@ async function run() {
     // add user info to database
     app.post('/users', async (req, res) => {
       try {
-        const user = req.body;
+        const user = await req.body;
         console.log('Received user data:', user);
 
         const existingUser = await usersCollection.findOne({ email: user.email });
@@ -178,13 +183,13 @@ async function run() {
     // create assignment to post database api
     app.post('/assignments', logger, verifyToken,  async (req, res) => {
       try {
-        const newAssignment = req.body;
+        const newAssignment = await req.body;
         const existingAssignment = await assignmentsCollection.findOne({ assignmentTitle: newAssignment.assignmentTitle });
         if (existingAssignment) {
           return res.status(400).json({ message: 'This assignment already exists' });
         }
         const result = await assignmentsCollection.insertOne(newAssignment);
-        console.log(result);
+       
         if (result.acknowledged) {
           res.status(201).json({ message: 'Assignment created successfully' });
         } else {
@@ -202,7 +207,7 @@ async function run() {
       console.log('route run');
       try {
 
-        const assignmentSubmission = req.body;
+        const assignmentSubmission = await req.body;
 
         const result = await submittedAssignmentCollection.insertOne(assignmentSubmission);
         console.log(result);
@@ -221,7 +226,7 @@ async function run() {
     // delete assignment
     app.delete('/assignments/:id',logger, verifyToken, async (req, res) => {
       try {
-        const id = req.params.id;
+        const id =  req.params.id;
         const query = { _id: new ObjectId(id) }
         const result = await assignmentsCollection.deleteOne(query);
         res.send(result)
@@ -235,7 +240,7 @@ async function run() {
     // update assignment 
     app.patch('/assignments/:id',logger, verifyToken, async (req, res) => {
       try {
-        const id = req.params.id;
+        const id = await req.params.id;
 
         const isValidObjectId = ObjectId.isValid(id);
 
@@ -269,9 +274,9 @@ async function run() {
 
 
     // update submitted assignment after getting marks
-    app.patch('/assignmentSubmission/:id',logger, verifyToken, async (req, res) => {
+    app.patch('/assignmentSubmission/:id', logger, verifyToken, async (req, res) => {
       try {
-        const id = req.params.id;
+        const id = await req.params.id;
         const isValidObjectId = ObjectId.isValid(id);
 
         if (!isValidObjectId) {
