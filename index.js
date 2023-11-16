@@ -14,8 +14,11 @@ app.use(cors({
     // 'http://localhost:5173',
     // 'http://localhost:5174',
     // 'http://localhost:5175',
-    'https://online-group-study-401cd.web.app',
-    'https://online-group-study-401cd.firebaseapp.com'
+    'https://online-group-study-client-side.vercel.app',
+    'https://dist-nine-navy.vercel.app',
+    'https://lively-offer.surge.sh'
+    // 'https://online-group-study-401cd.web.app',
+    // 'https://online-group-study-401cd.firebaseapp.com'
   ],
   credentials: true
 }));
@@ -65,7 +68,7 @@ async function run() {
     const assignmentsCollection = databaseName.collection('assignments');
     const submittedAssignmentCollection = databaseName.collection('submittedAssignments')
 
-    // auth related api
+    // auth related jwt api
     app.post('/jwt', logger, async (req, res) => {
       try {
         const user = await req.body;
@@ -77,8 +80,9 @@ async function run() {
           .cookie('token', token, {
             // httpOnly: true,
             // secure: true,
+            
             httpOnly: true,
-                secure: process.env.NODE_ENV === 'production'  ? true : false, 
+                secure: process.env.NODE_ENV === 'production' ? true : false , 
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
           })
           .send({ success: true })
